@@ -1,4 +1,4 @@
-import { Construct, Context, Stack, Token } from '@aws-cdk/cdk';
+import { Construct, Context, Stack, Token } from '@aws-cdk/core';
 
 /**
  * Interface for classes that can select an appropriate machine image to use

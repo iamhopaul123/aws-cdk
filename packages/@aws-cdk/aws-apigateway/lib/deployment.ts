@@ -1,4 +1,4 @@
-import { Construct, DeletionPolicy, Lazy, Resource, Stack } from '@aws-cdk/cdk';
+import { Construct, DeletionPolicy, Lazy, Resource, Stack } from '@aws-cdk/core';
 import crypto = require('crypto');
 import { CfnDeployment, CfnDeploymentProps } from './apigateway.generated';
 import { IRestApi } from './restapi';

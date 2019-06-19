@@ -1,6 +1,6 @@
 import { Reference } from "../reference";
 
-const CFN_REFERENCE_SYMBOL = Symbol.for('@aws-cdk/cdk.CfnReference');
+const CFN_REFERENCE_SYMBOL = Symbol.for('@aws-cdk/core.CfnReference');
 
 /**
  * A Token that represents a CloudFormation reference to another resource

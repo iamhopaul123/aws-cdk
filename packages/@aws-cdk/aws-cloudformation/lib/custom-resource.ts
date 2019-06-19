@@ -1,6 +1,6 @@
 import lambda = require('@aws-cdk/aws-lambda');
 import sns = require('@aws-cdk/aws-sns');
-import { CfnResource, Construct, Resource } from '@aws-cdk/cdk';
+import { CfnResource, Construct, Resource } from '@aws-cdk/core';
 import { CfnCustomResource } from './cloudformation.generated';
 
 /**

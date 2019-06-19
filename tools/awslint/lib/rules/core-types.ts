@@ -2,14 +2,14 @@ import reflect = require("jsii-reflect");
 import { TypeSystem } from "jsii-reflect";
 import { getDocTag } from "./util";
 
-const CORE_MODULE = "@aws-cdk/cdk";
+const CORE_MODULE = "@aws-cdk/core";
 enum CoreTypesFqn {
-  CfnResource = "@aws-cdk/cdk.CfnResource",
-  Construct = "@aws-cdk/cdk.Construct",
-  ConstructInterface = "@aws-cdk/cdk.IConstruct",
-  Resource = "@aws-cdk/cdk.Resource",
-  ResourceInterface = "@aws-cdk/cdk.IResource",
-  ResolvableInterface = "@aws-cdk/cdk.IResolvable"
+  CfnResource = "@aws-cdk/core.CfnResource",
+  Construct = "@aws-cdk/core.Construct",
+  ConstructInterface = "@aws-cdk/core.IConstruct",
+  Resource = "@aws-cdk/core.Resource",
+  ResourceInterface = "@aws-cdk/core.IResource",
+  ResolvableInterface = "@aws-cdk/core.IResolvable"
 }
 
 export class CoreTypes {

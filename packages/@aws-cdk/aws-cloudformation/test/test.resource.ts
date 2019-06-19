@@ -1,7 +1,7 @@
 import { expect, haveResource } from '@aws-cdk/assert';
 import lambda = require('@aws-cdk/aws-lambda');
 import sns = require('@aws-cdk/aws-sns');
-import cdk = require('@aws-cdk/cdk');
+import cdk = require('@aws-cdk/core');
 import { Test } from 'nodeunit';
 import { CustomResource, CustomResourceProvider } from '../lib';
 

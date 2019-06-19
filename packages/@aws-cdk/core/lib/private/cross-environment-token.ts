@@ -9,7 +9,7 @@ import { captureStackTrace } from '../stack-trace';
  * and so requires the resources to have physical names.
  * You should never need to interact with these directly,
  * instead use the {@link ResourceIdentifiers} class.
- * This class is private to the @aws-cdk/cdk package.
+ * This class is private to the @aws-cdk/core package.
  */
 export abstract class CrossEnvironmentToken implements IResolvable {
   public readonly creationStack: string[];

@@ -1,4 +1,4 @@
-import cdk = require('@aws-cdk/cdk');
+import cdk = require('@aws-cdk/core');
 import cxapi = require('@aws-cdk/cx-api');
 import { HostedZone } from './hosted-zone';
 import { HostedZoneAttributes, IHostedZone } from './hosted-zone-ref';

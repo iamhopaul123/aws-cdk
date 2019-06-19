@@ -3,7 +3,7 @@ import cloudwatch = require ('@aws-cdk/aws-cloudwatch');
 import ec2 = require('@aws-cdk/aws-ec2');
 import iam = require('@aws-cdk/aws-iam');
 import cloudmap = require('@aws-cdk/aws-servicediscovery');
-import { Construct, Context, IResource, Resource, Stack } from '@aws-cdk/cdk';
+import { Construct, Context, IResource, Resource, Stack } from '@aws-cdk/core';
 import { InstanceDrainHook } from './drain-hook/instance-drain-hook';
 import { CfnCluster } from './ecs.generated';
 

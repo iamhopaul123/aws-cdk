@@ -133,7 +133,7 @@
     "@aws-cdk/aws-waf": "^0.34.0",
     "@aws-cdk/aws-wafregional": "^0.34.0",
     "@aws-cdk/aws-workspaces": "^0.34.0",
-    "@aws-cdk/cdk": "^0.34.0",
+    "@aws-cdk/core": "^0.34.0",
     "@aws-cdk/cfnspec": "^0.34.0",
     "@aws-cdk/cx-api": "^0.34.0",
     "@aws-cdk/region-info": "^0.34.0",

@@ -6,7 +6,7 @@ import { captureStackTrace } from './stack-trace';
 import { Token } from './token';
 import { makeUniqueId } from './uniqueid';
 
-const CONSTRUCT_SYMBOL = Symbol.for('@aws-cdk/cdk.Construct');
+const CONSTRUCT_SYMBOL = Symbol.for('@aws-cdk/core.Construct');
 
 /**
  * Represents a construct.

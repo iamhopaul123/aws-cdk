@@ -1,5 +1,5 @@
-import cdk = require('@aws-cdk/cdk');
-import { ConcreteDependable, Construct, IConstruct, IDependable, IResource, Resource, Stack } from '@aws-cdk/cdk';
+import cdk = require('@aws-cdk/core');
+import { ConcreteDependable, Construct, IConstruct, IDependable, IResource, Resource, Stack } from '@aws-cdk/core';
 import { CfnEIP, CfnInternetGateway, CfnNatGateway, CfnRoute, CfnVPNGateway, CfnVPNGatewayRoutePropagation } from './ec2.generated';
 import { CfnRouteTable, CfnSubnet, CfnSubnetRouteTableAssociation, CfnVPC, CfnVPCGatewayAttachment } from './ec2.generated';
 import { NetworkBuilder } from './network-util';

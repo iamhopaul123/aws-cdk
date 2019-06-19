@@ -1,4 +1,4 @@
-import cdk = require('@aws-cdk/cdk');
+import cdk = require('@aws-cdk/core');
 import cxapi = require('@aws-cdk/cx-api');
 import { VpcAttributes } from './vpc';
 

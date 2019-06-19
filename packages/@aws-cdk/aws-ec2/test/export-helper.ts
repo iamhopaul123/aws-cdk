@@ -1,4 +1,4 @@
-import { CfnOutput, Construct, StringListCfnOutput } from '@aws-cdk/cdk';
+import { CfnOutput, Construct, StringListCfnOutput } from '@aws-cdk/core';
 import { ISubnet, SubnetType, Vpc } from '../lib';
 import { defaultSubnetName, range, subnetName } from '../lib/util';
 

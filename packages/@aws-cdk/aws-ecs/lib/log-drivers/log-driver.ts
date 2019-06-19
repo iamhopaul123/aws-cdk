@@ -1,4 +1,4 @@
-import cdk = require('@aws-cdk/cdk');
+import cdk = require('@aws-cdk/core');
 import { ContainerDefinition } from '../container-definition';
 import { CfnTaskDefinition } from '../ecs.generated';
 

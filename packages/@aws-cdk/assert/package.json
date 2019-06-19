@@ -31,7 +31,7 @@
     "pkglint": "^0.34.0"
   },
   "dependencies": {
-    "@aws-cdk/cdk": "^0.34.0",
+    "@aws-cdk/core": "^0.34.0",
     "@aws-cdk/cloudformation-diff": "^0.34.0",
     "@aws-cdk/cx-api": "^0.34.0",
     "jest": "^24.8.0",

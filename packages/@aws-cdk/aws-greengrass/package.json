@@ -71,10 +71,10 @@
     "pkglint": "^0.34.0"
   },
   "dependencies": {
-    "@aws-cdk/cdk": "^0.34.0"
+    "@aws-cdk/core": "^0.34.0"
   },
   "peerDependencies": {
-    "@aws-cdk/cdk": "^0.34.0"
+    "@aws-cdk/core": "^0.34.0"
   },
   "engines": {
     "node": ">= 8.10.0"

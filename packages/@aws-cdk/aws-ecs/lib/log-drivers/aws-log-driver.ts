@@ -1,6 +1,6 @@
 import logs = require('@aws-cdk/aws-logs');
-import cdk = require('@aws-cdk/cdk');
-import { Stack } from '@aws-cdk/cdk';
+import cdk = require('@aws-cdk/core');
+import { Stack } from '@aws-cdk/core';
 import { ContainerDefinition } from '../container-definition';
 import { CfnTaskDefinition } from '../ecs.generated';
 import { LogDriver } from "./log-driver";

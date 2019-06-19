@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import sns = require('@aws-cdk/aws-sns');
-import cdk = require('@aws-cdk/cdk');
+import cdk = require('@aws-cdk/core');
 import { AwsCustomResource } from '../lib';
 
 const app = new cdk.App();

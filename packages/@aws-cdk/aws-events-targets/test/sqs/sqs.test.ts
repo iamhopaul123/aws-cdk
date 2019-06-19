@@ -1,7 +1,7 @@
 import { expect, haveResource } from '@aws-cdk/assert';
 import events = require('@aws-cdk/aws-events');
 import sqs = require('@aws-cdk/aws-sqs');
-import { Stack } from '@aws-cdk/cdk';
+import { Stack } from '@aws-cdk/core';
 import targets = require('../../lib');
 
 test('sns topic as an event rule target', () => {

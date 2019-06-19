@@ -1,5 +1,5 @@
 import lambda = require('@aws-cdk/aws-lambda');
-import { Construct, Resource } from '@aws-cdk/cdk';
+import { Construct, Resource } from '@aws-cdk/core';
 import { ISecret } from './secret';
 import { CfnRotationSchedule } from './secretsmanager.generated';
 

@@ -1,6 +1,6 @@
 import iam = require('@aws-cdk/aws-iam');
 import sns = require('@aws-cdk/aws-sns');
-import { Construct, Lazy, Stack } from '@aws-cdk/cdk';
+import { Construct, Lazy, Stack } from '@aws-cdk/core';
 import { ManagedRule, RuleProps } from './rule';
 
 /**
