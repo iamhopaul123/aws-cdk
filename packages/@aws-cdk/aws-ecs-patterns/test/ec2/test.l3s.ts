@@ -61,6 +61,128 @@ export = {
     test.done();
   },
 
+  'test ECS loadbalanced construct with multiple targets'(test: Test) {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'VPC');
+    const cluster = new ecs.Cluster(stack, 'Cluster', { vpc });
+    cluster.addCapacity('DefaultAutoScalingGroup', { instanceType: new ec2.InstanceType('t2.micro') });
+
+    // WHEN
+    new ecsPatterns.ApplicationLoadBalancedEc2Service(stack, 'Service', {
+      cluster,
+      memoryLimitMiB: 500,
+      taskImageOptions: {
+          containerName: "web",
+          image: ecs.ContainerImage.fromRegistry('test'),
+      },
+      targetGroups: [
+        {
+          containerPort: 8080,
+          listener: "listener1"
+        },
+        {
+          containerPort: 9080,
+          listener: "listener2"
+        }
+      ],
+      loadBalancers: [
+        {
+          name: "lb1",
+          listeners: [{
+            name: "listener1"
+          }]
+        },
+        {
+          name: "lb2",
+          listeners: [{
+            name: "listener2"
+          }]
+        }
+      ],
+      desiredCount: 2,
+    });
+
+    // THEN
+    expect(stack).to(haveResource('AWS::ElasticLoadBalancingV2::LoadBalancer'));
+
+    expect(stack).to(haveResource('AWS::ElasticLoadBalancingV2::Listener', {
+      DefaultActions: [
+        {
+          TargetGroupArn: {
+            Ref: "Servicelb1listener1ECSTargetGroupwebGroup4BAB7CA0"
+          },
+          Type: "forward"
+        }
+      ],
+      LoadBalancerArn: {
+        Ref: "Servicelb152C7F4F9"
+      },
+    }));
+
+    expect(stack).to(haveResource('AWS::ElasticLoadBalancingV2::Listener', {
+      DefaultActions: [
+        {
+          TargetGroupArn: {
+            Ref: "Servicelb2listener2ECSTargetGroupwebGroupAD1581F3"
+          },
+          Type: "forward"
+        }
+      ],
+      LoadBalancerArn: {
+        Ref: "Servicelb262A538DF"
+      },
+    }));
+
+    expect(stack).to(haveResource("AWS::ECS::Service", {
+      DesiredCount: 2,
+      LaunchType: "EC2",
+      LoadBalancers: [
+        {
+          ContainerName: "web",
+          ContainerPort: 8080,
+          TargetGroupArn: {
+            Ref: "Servicelb1listener1ECSTargetGroupwebGroup4BAB7CA0"
+          }
+        },
+        {
+          ContainerName: "web",
+          ContainerPort: 9080,
+          TargetGroupArn: {
+            Ref: "Servicelb2listener2ECSTargetGroupwebGroupAD1581F3"
+          }
+        }
+      ],
+    }));
+
+    expect(stack).to(haveResourceLike('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: [
+        {
+          Name: "web",
+          PortMappings: [
+            {
+              ContainerPort: 80,
+              HostPort: 0,
+              Protocol: "tcp"
+            },
+            {
+              ContainerPort: 8080,
+              HostPort: 0,
+              Protocol: "tcp"
+            },
+            {
+              ContainerPort: 9080,
+              HostPort: 0,
+              Protocol: "tcp"
+            }
+          ]
+        }
+      ]
+    }));
+
+    test.done();
+  },
+
   'set vpc instead of cluster'(test: Test) {
     // GIVEN
     const stack = new cdk.Stack();
