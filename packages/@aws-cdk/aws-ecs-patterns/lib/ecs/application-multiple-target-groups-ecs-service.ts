@@ -1,4 +1,3 @@
-  
 import { ContainerDefinition, Ec2Service, Ec2TaskDefinition, Protocol } from '@aws-cdk/aws-ecs';
 import { ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Construct } from '@aws-cdk/core';

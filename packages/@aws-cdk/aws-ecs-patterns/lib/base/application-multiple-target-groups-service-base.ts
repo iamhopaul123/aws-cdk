@@ -27,7 +27,7 @@ export interface ApplicationMultipleTargetGroupsServiceBaseProps {
    */
   readonly vpc?: IVpc;
 
-   /**
+  /**
    * The properties required to create a new task definition. TaskDefinition or TaskImageOptions must be specified, but not both.
    *
    * @default none
@@ -182,17 +182,6 @@ export interface ApplicationLoadBalancerProps {
   readonly publicLoadBalancer?: boolean;
 
   /**
-   * The protocol for connections from clients to the load balancer.
-   * The load balancer port is determined from the protocol (port 80 for
-   * HTTP, port 443 for HTTPS).  A domain name and zone must be also be
-   * specified if using HTTPS.
-   *
-   * @default ApplicationProtocol.HTTP. If a certificate is specified, the protocol will be
-   * set by default to ApplicationProtocol.HTTPS.
-   */
-  readonly protocol?: ApplicationProtocol;
-
-  /**
    * The domain name for the service, e.g. "api.example.com."
    *
    * @default - No domain name.
@@ -221,6 +210,17 @@ export interface ApplicationListenerProps {
    * Name of the listener
    */
   readonly name: string;
+
+  /**
+   * The protocol for connections from clients to the load balancer.
+   * The load balancer port is determined from the protocol (port 80 for
+   * HTTP, port 443 for HTTPS).  A domain name and zone must be also be
+   * specified if using HTTPS.
+   *
+   * @default ApplicationProtocol.HTTP. If a certificate is specified, the protocol will be
+   * set by default to ApplicationProtocol.HTTPS.
+   */
+  readonly protocol?: ApplicationProtocol;
 
   /**
    * Certificate Manager certificate to associate with the load balancer.
@@ -288,10 +288,12 @@ export abstract class ApplicationMultipleTargetGroupsServiceBase extends cdk.Con
       let listenerTemp;
       for (const lbProps of props.loadBalancers) {
         const lb = this.createLoadBalancer(lbProps.name, lbProps.publicLoadBalancer, lbProps.loadBalancer);
+        const protocolType = new Set<ApplicationProtocol>();
         loadBalancerTemp = loadBalancerTemp || lb;
         if (lbProps.listeners) {
           for (const listenerProps of lbProps.listeners) {
-            const protocol = this.createListenerProtocol(lbProps.protocol, listenerProps.certificate);
+            const protocol = this.createListenerProtocol(listenerProps.protocol, listenerProps.certificate);
+            protocolType.add(protocol);
             const options = this.configListener(protocol, {
               certificate: listenerProps.certificate,
               domainName: lbProps.domainName,
@@ -308,7 +310,9 @@ export abstract class ApplicationMultipleTargetGroupsServiceBase extends cdk.Con
         }
         const domainName = this.createDomainName(lb, lbProps.domainName, lbProps.domainZone);
         new cdk.CfnOutput(this, `LoadBalancerDNS${lb.node.id}`, { value: lb.loadBalancerDnsName });
-        new cdk.CfnOutput(this, `ServiceURL${lb.node.id}`, { value: (lbProps.protocol || ApplicationProtocol.HTTP).toLowerCase() + '://' + domainName });
+        for (const protocol of protocolType) {
+          new cdk.CfnOutput(this, `ServiceURL${lb.node.id}`, { value: protocol.toLowerCase() + '://' + domainName });
+        }
       }
       if (!loadBalancerTemp) {
         throw new Error('At least one load balancer should be specified');
@@ -333,7 +337,7 @@ export abstract class ApplicationMultipleTargetGroupsServiceBase extends cdk.Con
     }
   }
 
-    /**
+  /**
    * Returns the default cluster.
    */
   protected getDefaultCluster(scope: cdk.Construct, vpc?: IVpc): Cluster {
