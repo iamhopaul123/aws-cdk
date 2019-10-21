@@ -428,13 +428,14 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
     if (props.loadBalancers) {
       let loadBalancerTemp;
       let listenerTemp;
-      let certificate;
       for (const lbProps of props.loadBalancers) {
         const lb = this.createLoadBalancer(lbProps.name, lbProps.publicLoadBalancer, lbProps.loadBalancer);
+        const protocolType = new Set<ApplicationProtocol>();
         loadBalancerTemp = loadBalancerTemp || lb;
-        const protocol = this.createListenerProtocol(props.protocol, props.certificate);
         if (lbProps.listeners) {
           for (const listenerProps of lbProps.listeners) {
+            const protocol = this.createListenerProtocol(listenerProps.protocol, listenerProps.certificate);
+            protocolType.add(protocol);
             const options = this.configListener(protocol, {
               certificate: listenerProps.certificate,
               domainName: lbProps.domainName,
@@ -446,13 +447,14 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
               name: listenerProps.name,
               listener: options.listener
             });
-            certificate = options.certificate;
             listenerTemp = listenerTemp || options.listener;
           }
         }
         const domainName = this.createDomainName(lb, lbProps.domainName, lbProps.domainZone);
         new cdk.CfnOutput(this, `LoadBalancerDNS${lb.node.id}`, { value: lb.loadBalancerDnsName });
-        new cdk.CfnOutput(this, `ServicURL${lb.node.id}`, { value: protocol.toLowerCase() + '://' + domainName });
+        for (const protocol of protocolType) {
+          new cdk.CfnOutput(this, `ServiceURL${lb.node.id}`, { value: protocol.toLowerCase() + '://' + domainName });
+        }
       }
       if (!loadBalancerTemp) {
         throw new Error('At least one load balancer should be specified');
@@ -461,7 +463,6 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
       if (!listenerTemp) {
         throw new Error('At least one listener should be specified');
       }
-      this.certificate = certificate;
       this.listener = listenerTemp;
     } else {
       this.loadBalancer = this.createLoadBalancer('LB', props.publicLoadBalancer, props.loadBalancer);
