@@ -597,15 +597,55 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
   }
 }
 
+/**
+ * Properties to configure a listener.
+ */
 interface ListenerConfig {
+  /**
+   * Name of the listener
+   */
   readonly listenerName: string;
+
+  /**
+   * Load balancer the listener attached to
+   */
   readonly loadBalancer: ApplicationLoadBalancer;
+
+  /**
+   * Certificate for the listener
+   *
+   * @default none
+   */
   readonly certificate?: ICertificate;
+
+  /**
+   * The domain name for the service, e.g. "api.example.com."
+   *
+   * @default - No domain name.
+   */
   readonly domainName?: string;
+
+  /**
+   * The Route53 hosted zone for the domain, e.g. "example.com."
+   *
+   * @default - No Route53 hosted domain zone.
+   */
   readonly domainZone?: IHostedZone;
 }
 
+/**
+ * Listener exposed properties
+ */
 interface ExposedListenerProperties {
+  /**
+   * The Application listener
+   */
   readonly listener: ApplicationListener;
+
+  /**
+   * Certificate for the listener
+   *
+   * @default none
+   */
   readonly certificate?: ICertificate;
 }
