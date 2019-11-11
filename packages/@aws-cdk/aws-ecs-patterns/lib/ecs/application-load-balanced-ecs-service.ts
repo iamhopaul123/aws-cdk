@@ -1,6 +1,8 @@
-import { Ec2Service, Ec2TaskDefinition } from '@aws-cdk/aws-ecs';
+import { ContainerDefinition, Ec2Service, Ec2TaskDefinition, Protocol } from '@aws-cdk/aws-ecs';
+import { ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Construct } from '@aws-cdk/core';
-import { ApplicationLoadBalancedServiceBase, ApplicationLoadBalancedServiceBaseProps } from '../base/application-load-balanced-service-base';
+import { ApplicationLoadBalancedServiceBase, ApplicationLoadBalancedServiceBaseProps,
+  ApplicationTargetProps } from '../base/application-load-balanced-service-base';
 
 /**
  * The properties for the ApplicationLoadBalancedEc2Service service.
@@ -17,33 +19,21 @@ export interface ApplicationLoadBalancedEc2ServiceProps extends ApplicationLoadB
   readonly taskDefinition?: Ec2TaskDefinition;
 
   /**
-   * The number of cpu units used by the task.
+   * The minimum number of CPU units to reserve for the container.
    *
    * Valid values, which determines your range of valid values for the memory parameter:
    *
-   * 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
-   *
-   * 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
-   *
-   * 1024 (1 vCPU) - Available memory values: 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB
-   *
-   * 2048 (2 vCPU) - Available memory values: Between 4GB and 16GB in 1GB increments
-   *
-   * 4096 (4 vCPU) - Available memory values: Between 8GB and 30GB in 1GB increments
-   *
-   * This default is set in the underlying FargateTaskDefinition construct.
-   *
-   * @default none
+   * @default - No minimum CPU units reserved.
    */
   readonly cpu?: number;
 
   /**
-   * The hard limit (in MiB) of memory to present to the container.
+   * The amount (in MiB) of memory to present to the container.
    *
    * If your container attempts to exceed the allocated memory, the container
    * is terminated.
    *
-   * At least one of memoryLimitMiB and memoryReservationMiB is required.
+   * At least one of memoryLimitMiB and memoryReservationMiB is required for non-Fargate services.
    *
    * @default - No memory limit.
    */
@@ -52,12 +42,15 @@ export interface ApplicationLoadBalancedEc2ServiceProps extends ApplicationLoadB
   /**
    * The soft limit (in MiB) of memory to reserve for the container.
    *
-   * When system memory is under contention, Docker attempts to keep the
-   * container memory within the limit. If the container requires more memory,
-   * it can consume up to the value specified by the Memory property or all of
-   * the available memory on the container instance—whichever comes first.
+   * When system memory is under heavy contention, Docker attempts to keep the
+   * container memory to this soft limit. However, your container can consume more
+   * memory when it needs to, up to either the hard limit specified with the memory
+   * parameter (if applicable), or all of the available memory on the container
+   * instance, whichever comes first.
    *
-   * At least one of memoryLimitMiB and memoryReservationMiB is required.
+   * At least one of memoryLimitMiB and memoryReservationMiB is required for non-Fargate services.
+   *
+   * Note that this setting will be ignored if TaskImagesOptions is specified
    *
    * @default - No memory reserved.
    */
@@ -77,6 +70,10 @@ export class ApplicationLoadBalancedEc2Service extends ApplicationLoadBalancedSe
    * The EC2 Task Definition in this construct.
    */
   public readonly taskDefinition: Ec2TaskDefinition;
+  /**
+   * The default target group for the service.
+   */
+  public readonly targetGroup: ApplicationTargetGroup;
 
   /**
    * Constructs a new instance of the ApplicationLoadBalancedEc2Service class.
@@ -117,8 +114,19 @@ export class ApplicationLoadBalancedEc2Service extends ApplicationLoadBalancedSe
     } else {
       throw new Error('You must specify one of: taskDefinition or image');
     }
+    this.service = this.createEc2Service(props);
+    if (this.taskDefinition.defaultContainer && props.targetGroups) {
+      this.targetGroup = this.registerECSTargets(this.service, this.taskDefinition.defaultContainer, props.targetGroups);
+    } else {
+      this.targetGroup = this.listener.addTargets('ECS', {
+        targets: [this.service],
+        port: 80
+      });
+    }
+  }
 
-    this.service = new Ec2Service(this, "Service", {
+  private createEc2Service(props: ApplicationLoadBalancedEc2ServiceProps): Ec2Service {
+    return new Ec2Service(this, "Service", {
       cluster: this.cluster,
       desiredCount: this.desiredCount,
       taskDefinition: this.taskDefinition,
@@ -129,6 +137,41 @@ export class ApplicationLoadBalancedEc2Service extends ApplicationLoadBalancedSe
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
     });
-    this.addServiceAsTarget(this.service);
+  }
+
+  private registerECSTargets(service: Ec2Service, container: ContainerDefinition, targets: ApplicationTargetProps[]): ApplicationTargetGroup {
+    this.addPortMappingForTargets(container, targets);
+    let targetGroup;
+    for (const targetProps of targets) {
+      const tg = this.findListener(targetProps.listener).addTargets(`ECSTargetGroup${container.containerName}`, {
+        port: 80,
+        targets: [
+          service.loadBalancerTarget({
+            containerName: container.containerName,
+            containerPort: targetProps.containerPort,
+            protocol: targetProps.protocol
+          })
+        ],
+        hostHeader: targetProps.hostHeader,
+        pathPattern: targetProps.pathPattern,
+        priority: targetProps.priority
+      });
+      targetGroup = targetGroup || tg;
+    }
+    if (!targetGroup) {
+      throw new Error('At least one target group should be specified.');
+    }
+    return targetGroup;
+  }
+
+  private addPortMappingForTargets(container: ContainerDefinition, targets: ApplicationTargetProps[]) {
+    for (const target of targets) {
+      if (!container.findPortMapping(target.containerPort, target.protocol || Protocol.TCP)) {
+        container.addPortMappings({
+          containerPort: target.containerPort,
+          protocol: target.protocol
+        });
+      }
+    }
   }
 }

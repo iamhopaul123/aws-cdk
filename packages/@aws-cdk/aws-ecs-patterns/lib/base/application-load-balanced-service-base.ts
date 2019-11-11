@@ -1,7 +1,7 @@
 import { DnsValidatedCertificate, ICertificate } from '@aws-cdk/aws-certificatemanager';
 import { IVpc } from '@aws-cdk/aws-ec2';
-import { AwsLogDriver, BaseService, CloudMapOptions, Cluster, ContainerImage, ICluster, LogDriver, PropagatedTagSource, Secret } from '@aws-cdk/aws-ecs';
-import { ApplicationListener, ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
+import { AwsLogDriver, CloudMapOptions, Cluster, ContainerImage, ICluster, LogDriver, PropagatedTagSource, Protocol, Secret } from '@aws-cdk/aws-ecs';
+import { ApplicationListener, ApplicationLoadBalancer, ApplicationProtocol } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { IRole } from '@aws-cdk/aws-iam';
 import { AddressRecordTarget, ARecord, IHostedZone } from '@aws-cdk/aws-route53';
 import { LoadBalancerTarget } from '@aws-cdk/aws-route53-targets';
@@ -37,6 +37,8 @@ export interface ApplicationLoadBalancedServiceBaseProps {
   /**
    * Determines whether the Load Balancer will be internet-facing.
    *
+   * Note that if loadBalancers is set, this setting should be omitted.
+   *
    * @default true
    */
   readonly publicLoadBalancer?: boolean;
@@ -52,6 +54,8 @@ export interface ApplicationLoadBalancedServiceBaseProps {
    * Certificate Manager certificate to associate with the load balancer.
    * Setting this option will set the load balancer protocol to HTTPS.
    *
+   * Note that if loadBalancers is set, this setting should be omitted.
+   *
    * @default - No certificate associated with the load balancer, if using
    * the HTTP protocol. For HTTPS, a DNS-validated certificate will be
    * created for the load balancer's specified domain name.
@@ -64,6 +68,8 @@ export interface ApplicationLoadBalancedServiceBaseProps {
    * HTTP, port 443 for HTTPS).  A domain name and zone must be also be
    * specified if using HTTPS.
    *
+   * Note that if loadBalancers is set, this setting should be omitted.
+   *
    * @default HTTP. If a certificate is specified, the protocol will be
    * set by default to HTTPS.
    */
@@ -72,12 +78,16 @@ export interface ApplicationLoadBalancedServiceBaseProps {
   /**
    * The domain name for the service, e.g. "api.example.com."
    *
+   * Note that if loadBalancers is set, this setting should be omitted.
+   *
    * @default - No domain name.
    */
   readonly domainName?: string;
 
   /**
    * The Route53 hosted zone for the domain, e.g. "example.com."
+   *
+   * Note that if loadBalancers is set, this setting should be omitted.
    *
    * @default - No Route53 hosted domain zone.
    */
@@ -101,11 +111,20 @@ export interface ApplicationLoadBalancedServiceBaseProps {
   /**
    * The application load balancer that will serve traffic to the service.
    *
+   * Note that if loadBalancers is set, this setting should be omitted.
+   *
    * [disable-awslint:ref-via-interface]
    *
    * @default - a new load balancer will be created.
    */
   readonly loadBalancer?: ApplicationLoadBalancer;
+
+  /**
+   * The application load balancer that will serve traffic to the service. At least one load balancer should be specified.
+   *
+   * @default - a new load balancer will be created.
+   */
+  readonly loadBalancers?: ApplicationLoadBalancerProps[];
 
   /**
    * Specifies whether to propagate the tags from the task definition or the service to the tasks in the service.
@@ -129,6 +148,152 @@ export interface ApplicationLoadBalancedServiceBaseProps {
    * @default - AWS Cloud Map service discovery is not enabled.
    */
   readonly cloudMapOptions?: CloudMapOptions;
+
+  /**
+   * Properties to specify ECS target groups. At least one target group should be specified.
+   *
+   * @default - default portMapping registered as
+   * target group and attached to the first defined listener
+   */
+  readonly targetGroups?: ApplicationTargetProps[];
+}
+
+export interface ApplicationTargetProps {
+  /**
+   * The port number of the container. Only applicable when using application/network load balancers.
+   */
+  readonly containerPort: number;
+
+  /**
+   * The protocol used for the port mapping. Only applicable when using application load balancers.
+   *
+   * @default ecs.Protocol.TCP
+   */
+  readonly protocol?: Protocol;
+
+  /**
+   * Name of the listener the target group attached to.
+   *
+   * @default - default listener (first added listener)
+   */
+  readonly listener?: string;
+
+  /**
+   * Priority of this target group
+   *
+   * The rule with the lowest priority will be used for every request.
+   * If priority is not given, these target groups will be added as
+   * defaults, and must not have conditions.
+   *
+   * Priorities must be unique.
+   *
+   * @default Target groups are used as defaults
+   */
+  readonly priority?: number;
+
+  /**
+   * Rule applies if the requested host matches the indicated host
+   *
+   * May contain up to three '*' wildcards.
+   *
+   * Requires that priority is set.
+   *
+   * @see https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html#host-conditions
+   *
+   * @default No host condition
+   */
+  readonly hostHeader?: string;
+
+  /**
+   * Rule applies if the requested path matches the given path pattern
+   *
+   * May contain up to three '*' wildcards.
+   *
+   * Requires that priority is set.
+   *
+   * @see https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html#path-conditions
+   *
+   * @default No path condition
+   */
+  readonly pathPattern?: string;
+}
+
+export interface ApplicationLoadBalancerProps {
+  /**
+   * Name of the load balancer (required if loadBalancer is not specified)
+   *
+   * Note that this field will be ignored if loadBalancer is set.
+   */
+  readonly name?: string;
+
+  /**
+   * Listeners (at least one listener) that attached to this load balancer (required if loadBalancer is not specified)
+   *
+   * Note that this field will be ignored if loadBalancer is set.
+   *
+   * @default - none
+   */
+  readonly listeners?: ApplicationListenerProps[];
+
+  /**
+   * Determines whether the Load Balancer will be internet-facing.
+   *
+   * Note that this field will be ignored if loadBalancer is set.
+   *
+   * @default true
+   */
+  readonly publicLoadBalancer?: boolean;
+
+  /**
+   * The domain name for the service, e.g. "api.example.com."
+   *
+   * @default - No domain name.
+   */
+  readonly domainName?: string;
+
+  /**
+   * The Route53 hosted zone for the domain, e.g. "example.com."
+   *
+   * @default - No Route53 hosted domain zone.
+   */
+  readonly domainZone?: IHostedZone;
+
+  /**
+   * The application load balancer that will serve traffic to the service.
+   *
+   * [disable-awslint:ref-via-interface]
+   *
+   * @default - a new load balancer will be created.
+   */
+  readonly loadBalancer?: ApplicationLoadBalancer;
+}
+
+export interface ApplicationListenerProps {
+  /**
+   * Name of the listener
+   */
+  readonly name: string;
+
+  /**
+   * The protocol for connections from clients to the load balancer.
+   * The load balancer port is determined from the protocol (port 80 for
+   * HTTP, port 443 for HTTPS).  A domain name and zone must be also be
+   * specified if using HTTPS.
+   *
+   * @default ApplicationProtocol.HTTP. If a certificate is specified, the protocol will be
+   * set by default to ApplicationProtocol.HTTPS.
+   */
+  readonly protocol?: ApplicationProtocol;
+
+  /**
+   * Certificate Manager certificate to associate with the load balancer.
+   * Setting this option will set the load balancer protocol to HTTPS.
+   *
+   * @default - No certificate associated with the load balancer, if using
+   * the HTTP protocol. For HTTPS, a DNS-validated certificate will be
+   * created for the load balancer's specified domain name.
+   */
+  readonly certificate?: ICertificate;
 }
 
 export interface ApplicationLoadBalancedTaskImageOptions {
@@ -205,6 +370,18 @@ export interface ApplicationLoadBalancedTaskImageOptions {
   readonly containerPort?: number;
 }
 
+export interface ListenerOptions {
+  /**
+   * Name of the listener
+   */
+  readonly name: string;
+
+  /**
+   * The listener for the service
+   */
+  readonly listener: ApplicationListener;
+}
+
 /**
  * The base class for ApplicationLoadBalancedEc2Service and ApplicationLoadBalancedFargateService services.
  */
@@ -216,22 +393,17 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
   public readonly desiredCount: number;
 
   /**
-   * The Application Load Balancer for the service.
+   * The default Application Load Balancer for the service (first added load balancer).
    */
   public readonly loadBalancer: ApplicationLoadBalancer;
 
   /**
-   * The listener for the service.
+   * The default listener for the service (first added listener).
    */
   public readonly listener: ApplicationListener;
 
   /**
-   * The target group for the service.
-   */
-  public readonly targetGroup: ApplicationTargetGroup;
-
-  /**
-   * Certificate Manager certificate to associate with the load balancer.
+   * Certificate Manager certificate to associate with the load balancer (first added certificate).
    */
   public readonly certificate?: ICertificate;
 
@@ -240,78 +412,75 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
    */
   public readonly cluster: ICluster;
 
+  protected listeners = new Array<ListenerOptions>();
+
   /**
    * Constructs a new instance of the ApplicationLoadBalancedServiceBase class.
    */
   constructor(scope: cdk.Construct, id: string, props: ApplicationLoadBalancedServiceBaseProps = {}) {
     super(scope, id);
 
-    if (props.cluster && props.vpc) {
-      throw new Error('You can only specify either vpc or cluster. Alternatively, you can leave both blank');
-    }
-    this.cluster = props.cluster || this.getDefaultCluster(this, props.vpc);
+    this.validateInput(props);
 
+    this.cluster = props.cluster || this.getDefaultCluster(this, props.vpc);
     this.desiredCount = props.desiredCount || 1;
 
-    const internetFacing = props.publicLoadBalancer !== undefined ? props.publicLoadBalancer : true;
-
-    const lbProps = {
-      vpc: this.cluster.vpc,
-      internetFacing
-    };
-
-    this.loadBalancer = props.loadBalancer !== undefined ? props.loadBalancer : new ApplicationLoadBalancer(this, 'LB', lbProps);
-
-    const targetProps = {
-      port: 80
-    };
-
-    if (props.certificate !== undefined && props.protocol !== undefined && props.protocol !== ApplicationProtocol.HTTPS) {
-      throw new Error('The HTTPS protocol must be used when a certificate is given');
-    }
-    const protocol = props.protocol !== undefined ? props.protocol : (props.certificate ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP);
-
-    this.listener = this.loadBalancer.addListener('PublicListener', {
-      protocol,
-      open: true
-    });
-    this.targetGroup = this.listener.addTargets('ECS', targetProps);
-
-    if (protocol === ApplicationProtocol.HTTPS) {
-      if (typeof props.domainName === 'undefined' || typeof props.domainZone === 'undefined') {
-        throw new Error('A domain name and zone is required when using the HTTPS protocol');
+    if (props.loadBalancers) {
+      let loadBalancerTemp;
+      let listenerTemp;
+      for (const lbProps of props.loadBalancers) {
+        const lb = this.createLoadBalancer(lbProps.name, lbProps.publicLoadBalancer, lbProps.loadBalancer);
+        const protocolType = new Set<ApplicationProtocol>();
+        loadBalancerTemp = loadBalancerTemp || lb;
+        if (lbProps.listeners) {
+          for (const listenerProps of lbProps.listeners) {
+            const protocol = this.createListenerProtocol(listenerProps.protocol, listenerProps.certificate);
+            protocolType.add(protocol);
+            const options = this.configListener(protocol, {
+              certificate: listenerProps.certificate,
+              domainName: lbProps.domainName,
+              domainZone: lbProps.domainZone,
+              listenerName: listenerProps.name,
+              loadBalancer: lb,
+            });
+            this.listeners.push({
+              name: listenerProps.name,
+              listener: options.listener
+            });
+            listenerTemp = listenerTemp || options.listener;
+          }
+        }
+        const domainName = this.createDomainName(lb, lbProps.domainName, lbProps.domainZone);
+        new cdk.CfnOutput(this, `LoadBalancerDNS${lb.node.id}`, { value: lb.loadBalancerDnsName });
+        for (const protocol of protocolType) {
+          new cdk.CfnOutput(this, `ServiceURL${lb.node.id}`, { value: protocol.toLowerCase() + '://' + domainName });
+        }
       }
-
-      if (props.certificate !== undefined) {
-        this.certificate = props.certificate;
-      } else {
-        this.certificate = new DnsValidatedCertificate(this, 'Certificate', {
-          domainName: props.domainName,
-          hostedZone: props.domainZone
-        });
+      if (!loadBalancerTemp) {
+        throw new Error('At least one load balancer should be specified');
       }
-    }
-    if (this.certificate !== undefined) {
-      this.listener.addCertificateArns('Arns', [this.certificate.certificateArn]);
-    }
-
-    let domainName = this.loadBalancer.loadBalancerDnsName;
-    if (typeof props.domainName !== 'undefined') {
-      if (typeof props.domainZone === 'undefined') {
-        throw new Error('A Route53 hosted domain zone name is required to configure the specified domain name');
+      this.loadBalancer = loadBalancerTemp;
+      if (!listenerTemp) {
+        throw new Error('At least one listener should be specified');
       }
-
-      const record = new ARecord(this, "DNS", {
-        zone: props.domainZone,
-        recordName: props.domainName,
-        target: AddressRecordTarget.fromAlias(new LoadBalancerTarget(this.loadBalancer)),
+      this.listener = listenerTemp;
+    } else {
+      this.loadBalancer = this.createLoadBalancer('LB', props.publicLoadBalancer, props.loadBalancer);
+      const protocol = this.createListenerProtocol(props.protocol, props.certificate);
+      const options = this.configListener(protocol, {
+        certificate: props.certificate,
+        domainName: props.domainName,
+        domainZone: props.domainZone,
+        listenerName: "PublicListener",
+        loadBalancer: this.loadBalancer,
       });
+      this.listener = options.listener;
+      this.certificate = options.certificate;
+      const domainName = this.createDomainName(this.loadBalancer, props.domainName, props.domainZone);
 
-      domainName = record.domainName;
+      new cdk.CfnOutput(this, 'LoadBalancerDNS', { value: this.loadBalancer.loadBalancerDnsName });
+      new cdk.CfnOutput(this, 'ServiceURL', { value: protocol.toLowerCase() + '://' + domainName });
     }
-
-    new cdk.CfnOutput(this, 'LoadBalancerDNS', { value: this.loadBalancer.loadBalancerDnsName });
-    new cdk.CfnOutput(this, 'ServiceURL', { value: protocol.toLowerCase() + '://' + domainName });
   }
 
   /**
@@ -324,14 +493,159 @@ export abstract class ApplicationLoadBalancedServiceBase extends cdk.Construct {
     return stack.node.tryFindChild(DEFAULT_CLUSTER_ID) as Cluster || new Cluster(stack, DEFAULT_CLUSTER_ID, { vpc });
   }
 
-  /**
-   * Adds service as a target of the target group.
-   */
-  protected addServiceAsTarget(service: BaseService) {
-    this.targetGroup.addTarget(service);
-  }
-
   protected createAWSLogDriver(prefix: string): AwsLogDriver {
     return new AwsLogDriver({ streamPrefix: prefix });
   }
+
+  protected findListener(name?: string): ApplicationListener {
+    if (!name) {
+      return this.listener;
+    }
+    for (const option of this.listeners) {
+      if (option.name === name) {
+        return option.listener;
+      }
+    }
+    throw new Error(`Listener ${name} is not defined. Did you define listener with name ${name}?`);
+  }
+
+  private configListener(protocol: ApplicationProtocol, props: ListenerConfig): ExposedListenerProperties {
+    const listener = this.createListener(props.listenerName, props.loadBalancer, protocol);
+    let certificate;
+    if (protocol === ApplicationProtocol.HTTPS) {
+      certificate = this.createListenerCertificate(props.certificate, props.domainName, props.domainZone);
+    } else {
+      certificate = undefined;
+    }
+    if (certificate !== undefined) {
+      listener.addCertificateArns('Arns', [certificate.certificateArn]);
+    }
+
+    return {
+      certificate,
+      listener,
+    };
+  }
+
+  private validateInput(props: ApplicationLoadBalancedServiceBaseProps) {
+    if (props.cluster && props.vpc) {
+      throw new Error('You can only specify either vpc or cluster. Alternatively, you can leave both blank');
+    }
+    if (props.certificate !== undefined && props.protocol !== undefined && props.protocol !== ApplicationProtocol.HTTPS) {
+      throw new Error('The HTTPS protocol must be used when a certificate is given');
+    }
+  }
+
+  private createLoadBalancer(name?: string, publicLoadBalancer?: boolean, loadBalancer?: ApplicationLoadBalancer): ApplicationLoadBalancer {
+    if (loadBalancer) {
+      return loadBalancer;
+    }
+    if (!name) {
+      throw new Error("Name of the new load balancer is required.");
+    }
+    const internetFacing = publicLoadBalancer !== undefined ? publicLoadBalancer : true;
+    const lbProps = {
+      vpc: this.cluster.vpc,
+      internetFacing
+    };
+
+    return new ApplicationLoadBalancer(this, name, lbProps);
+  }
+
+  private createListenerProtocol(listenerProtocol?: ApplicationProtocol, certificate?: ICertificate): ApplicationProtocol {
+    return listenerProtocol !== undefined ? listenerProtocol : (certificate ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP);
+  }
+
+  private createListenerCertificate(certificate?: ICertificate, domainName?: string, domainZone?: IHostedZone): ICertificate {
+    if (typeof domainName === 'undefined' || typeof domainZone === 'undefined') {
+      throw new Error('A domain name and zone is required when using the HTTPS protocol');
+    }
+
+    if (certificate !== undefined) {
+      return certificate;
+    } else {
+      return new DnsValidatedCertificate(this, 'Certificate', {
+        domainName,
+        hostedZone: domainZone
+      });
+    }
+  }
+
+  private createListener(name: string, lb: ApplicationLoadBalancer, protocol?: ApplicationProtocol): ApplicationListener {
+    return lb.addListener(name, {
+      protocol,
+      open: true
+    });
+  }
+
+  private createDomainName(loadBalancer: ApplicationLoadBalancer, name?: string, zone?: IHostedZone): string {
+    let domainName = loadBalancer.loadBalancerDnsName;
+    if (typeof name !== 'undefined') {
+      if (typeof zone === 'undefined') {
+        throw new Error('A Route53 hosted domain zone name is required to configure the specified domain name');
+      }
+
+      const record = new ARecord(this, "DNS", {
+        zone,
+        recordName: name,
+        target: AddressRecordTarget.fromAlias(new LoadBalancerTarget(loadBalancer)),
+      });
+
+      domainName = record.domainName;
+    }
+    return domainName;
+  }
+}
+
+/**
+ * Properties to configure a listener.
+ */
+interface ListenerConfig {
+  /**
+   * Name of the listener
+   */
+  readonly listenerName: string;
+
+  /**
+   * Load balancer the listener attached to
+   */
+  readonly loadBalancer: ApplicationLoadBalancer;
+
+  /**
+   * Certificate for the listener
+   *
+   * @default none
+   */
+  readonly certificate?: ICertificate;
+
+  /**
+   * The domain name for the service, e.g. "api.example.com."
+   *
+   * @default - No domain name.
+   */
+  readonly domainName?: string;
+
+  /**
+   * The Route53 hosted zone for the domain, e.g. "example.com."
+   *
+   * @default - No Route53 hosted domain zone.
+   */
+  readonly domainZone?: IHostedZone;
+}
+
+/**
+ * Listener exposed properties
+ */
+interface ExposedListenerProperties {
+  /**
+   * The Application listener
+   */
+  readonly listener: ApplicationListener;
+
+  /**
+   * Certificate for the listener
+   *
+   * @default none
+   */
+  readonly certificate?: ICertificate;
 }

@@ -1,4 +1,5 @@
 import { FargateService, FargateTaskDefinition } from '@aws-cdk/aws-ecs';
+import { ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 import { Construct } from '@aws-cdk/core';
 import { ApplicationLoadBalancedServiceBase, ApplicationLoadBalancedServiceBaseProps } from '../base/application-load-balanced-service-base';
 
@@ -84,6 +85,10 @@ export class ApplicationLoadBalancedFargateService extends ApplicationLoadBalanc
    * The Fargate task definition in this construct.
    */
   public readonly taskDefinition: FargateTaskDefinition;
+  /**
+   * The target group for the service.
+   */
+  public readonly targetGroup: ApplicationTargetGroup;
 
   /**
    * Constructs a new instance of the ApplicationLoadBalancedFargateService class.
@@ -137,6 +142,9 @@ export class ApplicationLoadBalancedFargateService extends ApplicationLoadBalanc
       enableECSManagedTags: props.enableECSManagedTags,
       cloudMapOptions: props.cloudMapOptions,
     });
-    this.addServiceAsTarget(this.service);
+    this.targetGroup = this.listener.addTargets('ECS', {
+      targets: [this.service],
+      port: 80
+    });
   }
 }
